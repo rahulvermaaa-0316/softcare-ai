@@ -83,10 +83,13 @@ FLASK_SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "dev-secret-key")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 gemini_client = None
 
+import google.generativeai as genai
+
 if GEMINI_API_KEY:
-    gemini_client = genai.Client(api_key=GEMINI_API_KEY)
+    genai.configure(api_key=GEMINI_API_KEY)
 else:
     print("⚠️ GEMINI_API_KEY not found")
+
 
 
 # ---------- GROQ ----------
@@ -180,11 +183,10 @@ If asked who created you, reply exactly:
 """
 
 def gemini_generate(prompt):
-    response = gemini_client.models.generate_content(
-        model="gemini-1.5-pro",
-        contents=prompt
-    )
+    model = genai.GenerativeModel("gemini-1.5-pro")
+    response = model.generate_content(prompt)
     return response.text.strip()
+
 
 
 def get_ai_reply(message, emotion="neutral", user_location=None):
