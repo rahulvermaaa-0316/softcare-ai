@@ -114,13 +114,13 @@ SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
 # ---------- GOOGLE OAUTH ----------
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
-GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "http://127.0.0.1:5000/google/callback")
+
+GOOGLE_REDIRECT_URI = os.getenv(
+    "GOOGLE_REDIRECT_URI",
+    "https://softcare-ai.onrender.com/google/callback"
+)
+
 SMTP_PORT = int(os.getenv("SMTP_PORT", 465))
-
-if not GROQ_API_KEY:
-    raise ValueError("❌ GROQ_API_KEY missing")
-
-GOOGLE_REDIRECT_URI = "http://127.0.0.1:5000/google/callback"
 
 # ================= FLASK APP =================
 app = Flask(__name__, template_folder="templates", static_folder="static")
