@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SoftCare AI — Identity</title>
+
+  <!-- Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <style>
+    :root {
+      --primary: #7c4dff;
+      --primary-hover: #6c42e0;
+      --bg-dark: #020617;
+      --glass: rgba(255, 255, 255, 0.03);
+      --border: rgba(255, 255, 255, 0.08);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #e2e8f0;
+      overflow: hidden;
+      /* Prevent scroll bars from blobs */
+      position: relative;
+    }
+
+    /* 🌌 BACKGROUND ATMOSPHERE */
+    .ambient-light {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -2;
+    }
+
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(90px);
+      opacity: 0.4;
+      animation: float 10s ease-in-out infinite;
+    }
+
+    .blob-1 {
+      top: -10%;
+      left: -10%;
+      width: 500px;
+      height: 500px;
+      background: #4c1d95;
+    }
+
+    .blob-2 {
+      bottom: -10%;
+      right: -10%;
+      width: 400px;
+      height: 400px;
+      background: #0ea5e9;
+      animation-delay: -5s;
+    }
+
+    /* NOISE TEXTURE */
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence baseFrequency='0.65'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/></svg>");
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    /* 💎 GLASS CARD */
+    .card {
+      width: 100%;
+      max-width: 420px;
+      padding: 40px 32px;
+      border-radius: 24px;
+      background: var(--glass);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid var(--border);
+      box-shadow:
+        0 25px 50px -12px rgba(0, 0, 0, 0.7),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      transform: translateY(0);
+      transition: transform 0.3s ease;
+    }
+
+    /* 👤 AVATAR SECTION */
+    .avatar-container {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 20px;
+    }
+
+    .avatar {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #2e2e3a, #1a1a20);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 42px;
+      font-weight: 700;
+      color: #fff;
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 0 30px rgba(124, 77, 255, 0.3);
+      overflow: hidden;
+      animation: breath 4s ease-in-out infinite;
+    }
+
+    .avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Edit Button */
+    .edit-btn {
+      position: absolute;
+      bottom: 5px;
+      right: 5px;
+      width: 36px;
+      height: 36px;
+      background: var(--primary);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      border: 2px solid #1e1e24;
+      /* seamless look */
+      transition: 0.2s;
+    }
+
+    .edit-btn:hover {
+      transform: scale(1.1);
+      background: #926aff;
+    }
+
+    .edit-btn i {
+      font-size: 14px;
+      color: white;
+    }
+
+    .edit-btn input {
+      display: none;
+    }
+
+    /* TEXT INFO */
+    .profile-header {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    .profile-header h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .profile-header .email {
+      color: #94a3b8;
+      font-size: 0.9rem;
+    }
+
+    /* 📝 INPUT FIELDS */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .label {
+      display: block;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-wrapper i {
+      position: absolute;
+      left: 14px;
+      color: #64748b;
+      font-size: 14px;
+      pointer-events: none;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 14px 14px 14px 40px;
+      /* Space for icon */
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: #fff;
+      font-size: 0.95rem;
+      outline: none;
+      transition: all 0.3s ease;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .form-input:focus {
+      background: rgba(0, 0, 0, 0.5);
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(124, 77, 255, 0.15), inset 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .form-input:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* 🔘 BUTTONS */
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 30px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 14px;
+      border-radius: 12px;
+      border: none;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .btn-back {
+      background: rgba(255, 255, 255, 0.05);
+      color: #cbd5e1;
+      border: 1px solid transparent;
+    }
+
+    .btn-back:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-save {
+      background: linear-gradient(135deg, var(--primary), #5b21ff);
+      color: white;
+      box-shadow: 0 8px 20px -6px rgba(124, 77, 255, 0.5);
+    }
+
+    .btn-save:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 25px -8px rgba(124, 77, 255, 0.7);
+    }
+
+    .btn-save:active {
+      transform: translateY(0);
+    }
+
+    .btn-logout {
+      margin-top: 12px;
+      background: rgba(239, 68, 68, 0.1);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      width: 100%;
+    }
+
+    .btn-logout:hover {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fff;
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+
+    /* 🍞 TOAST NOTIFICATION */
+    .toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-100px);
+      background: rgba(16, 185, 129, 0.15);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+      padding: 12px 24px;
+      border-radius: 50px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      opacity: 0;
+      z-index: 100;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* ANIMATIONS */
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translate(0, 0);
+      }
+
+      50% {
+        transform: translate(20px, -20px);
+      }
+    }
+
+    @keyframes breath {
+
+      0%,
+      100% {
+        box-shadow: 0 0 25px rgba(124, 77, 255, 0.25);
+        border-color: rgba(255, 255, 255, 0.1);
+      }
+
+      50% {
+        box-shadow: 0 0 45px rgba(124, 77, 255, 0.45);
+        border-color: rgba(255, 255, 255, 0.25);
+      }
+    }
+
+    /* MOBILE */
+    @media(max-width: 480px) {
+      .card {
+        padding: 40px 24px;
+        height: 100dvh;
+        border-radius: 0;
+        overflow-y: auto;
+        display: block;
+      }
+
+      /* Ensure ample scroll space at bottom */
+      .btn-logout {
+        margin-bottom: 40px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Ambient Blobs -->
+  <div class="ambient-light">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast">
+    <i class="fa-solid fa-circle-check"></i>
+    <span>Profile updated successfully</span>
+  </div>
+
+  <div class="card">
+
+    <!-- AVATAR -->
+    <div class="avatar-container">
+      <div class="avatar" id="avatarDisplay">
+        <span id="avatarLetter">?</span>
+      </div>
+      <label class="edit-btn">
+        <i class="fa-solid fa-camera"></i>
+        <input type="file" accept="image/*" onchange="previewAvatar(event)">
+      </label>
+    </div>
+
+    <!-- TEXT -->
+    <div class="profile-header">
+      <h2 id="name">Loading...</h2>
+      <div class="email" id="email">...</div>
+    </div>
+
+    <!-- PROVIDER -->
+    <div class="form-group">
+      <label class="label">Account Type</label>
+      <div class="input-wrapper">
+        <i class="fa-solid fa-shield-halved"></i>
+        <input class="form-input" id="provider" disabled value="...">
+      </div>
+    </div>
+
+    <!-- PHONE -->
+    <div class="form-group">
+      <label class="label">Phone Number</label>
+      <div class="input-wrapper">
+        <i class="fa-solid fa-phone"></i>
+        <input class="form-input" id="phone" type="tel" placeholder="Add phone number">
+      </div>
+    </div>
+
+    <!-- LOCATION -->
+    <div class="form-group">
+      <label class="label">Location</label>
+      <div class="input-wrapper">
+        <i class="fa-solid fa-location-dot"></i>
+        <input class="form-input" id="location" type="text" placeholder="City, Country">
+      </div>
+    </div>
+
+    <!-- BUTTONS -->
+    <div class="actions">
+      <button class="btn btn-back" onclick="window.location.href='/dashboard'">Cancel</button>
+      <button class="btn btn-save" onclick="saveProfile()" id="saveBtn">Save Changes</button>
+    </div>
+
+    <button class="btn btn-logout" onclick="window.location.href='/logout'">
+      <i class="fa-solid fa-right-from-bracket"></i> Logout
+    </button>
+
+  </div>
+
+  <script>
+    let currentAvatarBase64 = null;
+
+    document.addEventListener("DOMContentLoaded", loadProfile);
+
+    /* 1. FETCH & POPULATE DATA */
+    async function loadProfile() {
+      try {
+        const res = await fetch("/me");
+        if (!res.ok) throw new Error("Unauthorized");
+
+        const user = await res.json();
+
+        // Text Fields
+        document.getElementById("name").innerText = user.name;
+        document.getElementById("email").innerText = user.email;
+        document.getElementById("provider").value = (user.provider || "EMAIL").toUpperCase();
+        document.getElementById("phone").value = user.phone || "";
+        document.getElementById("location").value = user.location || "";
+
+        // Avatar Logic
+        const avatarEl = document.getElementById("avatarDisplay");
+
+        if (user.avatar) {
+          avatarEl.innerHTML = `<img src="${user.avatar}" alt="User Avatar">`;
+          // Keep track of current
+        } else {
+          const initial = user.name ? user.name.charAt(0).toUpperCase() : "U";
+          avatarEl.innerHTML = `<span id="avatarLetter">${initial}</span>`;
+        }
+      } catch (error) {
+        console.error(error);
+        // Redirect only if strictly needed, or just show empty state
+        window.location.href = "/login-page";
+      }
+    }
+
+    /* 2. PREVIEW IMAGE LOCALLY */
+    function previewAvatar(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      // Optional: Size Check (2MB Limit)
+      if (file.size > 2 * 1024 * 1024) {
+        alert("Image is too large. Please select an image under 2MB.");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        currentAvatarBase64 = e.target.result;
+        document.getElementById("avatarDisplay").innerHTML = `<img src="${currentAvatarBase64}" alt="Preview">`;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    /* 3. SAVE DATA TO BACKEND */
+    async function saveProfile() {
+      const btn = document.getElementById("saveBtn");
+      const originalText = btn.innerText;
+
+      // Loading State
+      btn.innerText = "Saving...";
+      btn.style.opacity = "0.7";
+      btn.disabled = true;
+
+      const payload = {
+        phone: document.getElementById("phone").value,
+        location: document.getElementById("location").value
+      };
+
+      if (currentAvatarBase64) {
+        payload.avatar = currentAvatarBase64;
+      }
+
+      try {
+        const res = await fetch("/update-profile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          showToast();
+          // Redirect to dashboard after 1.5s
+          setTimeout(() => {
+            window.location.href = "/dashboard";
+          }, 1000);
+        } else {
+          alert("Error: " + (data.error || "Could not save profile"));
+        }
+      } catch (error) {
+        console.error("Save error:", error);
+        alert("Network error occurred.");
+      } finally {
+        // Reset Button
+        btn.innerText = originalText;
+        btn.style.opacity = "1";
+        btn.disabled = false;
+      }
+    }
+
+    /* 4. SHOW TOAST NOTIFICATION */
+    function showToast() {
+      const toast = document.getElementById("toast");
+      toast.classList.add("show");
+      setTimeout(() => {
+        toast.classList.remove("show");
+      }, 3000);
+    }
+  </script>
+
+</body>
+
+</html>
