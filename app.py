@@ -21,7 +21,8 @@ pymysql.install_as_MySQLdb()
 import re
 from collections import defaultdict
 
-from google import genai
+import google.generativeai as genai
+
 import sys
 sys.stdout.reconfigure(encoding="utf-8")
 
