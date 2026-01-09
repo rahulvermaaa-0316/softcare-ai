@@ -18,6 +18,7 @@
 
     body {
       height: 100vh;
+      height: 100dvh;
       background: radial-gradient(circle at top, #312e81, #020617 65%);
       color: #fff;
       overflow: hidden;
@@ -85,7 +86,7 @@
       border-right: 1px solid rgba(255, 255, 255, .08);
       box-shadow: 0 0 40px rgba(124, 77, 255, .25);
       transition: .3s;
-      z-index: 6;
+      z-index: 50;
     }
 
     .sidebar-top {
@@ -123,6 +124,7 @@
       flex: 1;
       display: flex;
       flex-direction: column;
+      position: relative;
     }
 
     /* TOPBAR */
@@ -172,11 +174,15 @@
     .chat-area {
       flex: 1;
       padding: 26px;
+      padding-bottom: 110px;
+      /* 🔥 input ke liye space */
+
       display: flex;
       flex-direction: column;
       gap: 16px;
       overflow-y: auto;
     }
+
 
     /* MESSAGE */
     .msg {
@@ -211,13 +217,22 @@
 
     /* INPUT */
     .chat-input {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+
       display: flex;
       gap: 12px;
-      padding: 16px;
-      background: rgba(255, 255, 255, .06);
+      padding: 14px;
+
+      background: rgba(15, 23, 42, 0.85);
       backdrop-filter: blur(20px);
       box-shadow: 0 -10px 30px rgba(0, 0, 0, .35);
+
+      z-index: 20;
     }
+
 
     .chat-input textarea {
       flex: 1;
@@ -283,11 +298,14 @@
       display: flex;
       flex-direction: column;
       height: 100vh;
+      height: 100dvh;
     }
 
     /* menu stays on top */
     .sidebar-menu {
       flex: 1;
+      overflow-y: auto;
+      min-height: 0;
     }
 
     /* logout always at bottom */
