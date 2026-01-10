@@ -132,9 +132,17 @@ from datetime import timedelta
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
-    SESSION_COOKIE_SECURE=True,   # IMPORTANT for HTTPS
+    SESSION_COOKIE_SECURE=os.getenv("RENDER") is not None, # True only in production
     PERMANENT_SESSION_LIFETIME=timedelta(days=7)
 )
+
+# Fix for "Back button after logout" issue
+@app.after_request
+def add_header(response):
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 CORS(app)
 
