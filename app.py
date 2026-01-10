@@ -14,11 +14,12 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 from groq import Groq
 import requests, os, smtplib, base64, time, random, uuid, datetime
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+
 import pymysql
 pymysql.install_as_MySQLdb()
-import re
+import re, json
 from collections import defaultdict
 
 import google.generativeai as genai
@@ -90,6 +91,8 @@ if GEMINI_API_KEY:
 else:
     print("⚠️ GEMINI_API_KEY not found")
 
+SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
+MAIL_FROM = os.getenv("MAIL_FROM")
 
 
 # ---------- GROQ ----------
@@ -107,9 +110,7 @@ ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
 
 
-MAIL_EMAIL = os.getenv("MAIL_EMAIL")
-MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
-SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+
 
 # ---------- GOOGLE OAUTH ----------
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
@@ -126,9 +127,13 @@ SMTP_PORT = int(os.getenv("SMTP_PORT", 465))
 app = Flask(__name__, template_folder="templates", static_folder="static")
 app.secret_key = FLASK_SECRET_KEY
 
+from datetime import timedelta
+
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SAMESITE="Lax"
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=True,   # IMPORTANT for HTTPS
+    PERMANENT_SESSION_LIFETIME=timedelta(days=7)
 )
 
 CORS(app)
@@ -241,87 +246,148 @@ User: {message}
 
 # ================= EMAIL =================
 def send_welcome_email(to_email, user_name, provider):
-    subject = "✨ Welcome to SoftCare AI — Your personal assistant"
+    if not os.getenv("SENDGRID_API_KEY"):
+        print("⚠️ SENDGRID_API_KEY not found. Skipping welcome email.")
+        return
+
+    mail_from = os.getenv("MAIL_FROM")
+    if not mail_from:
+        print("⚠️ MAIL_FROM not found. Skipping welcome email.")
+        return
+
     signup_method = "Google Sign-In" if provider == "google" else "Email & Password"
 
     html = f"""
-    <html>
-    <body style="background:#020617;color:#fff;font-family:Inter,Arial;padding:40px">
-      <div style="max-width:600px;margin:auto;
-        background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.04));
-        border-radius:22px;padding:36px;
-        box-shadow:0 30px 80px rgba(0,0,0,.8)">
-        <h1 style="color:#c7b8ff">SoftCare AI</h1>
-        <h2>Welcome, {user_name} 👋</h2>
-        <p>Your account was created using <b>{signup_method}</b>.</p>
-        <p>SoftCare AI is here to help you simplify your life.</p>
-        <a href="http://127.0.0.1:5000/dashboard"
-           style="display:inline-block;margin-top:24px;
-           padding:14px 30px;border-radius:999px;
-           background:linear-gradient(135deg,#7c4dff,#5b21ff);
-           color:#fff;text-decoration:none;">
-           Start Chatting
-        </a>
-        <p style="margin-top:30px;font-size:12px;color:#9ca3af">
-          © 2025 SoftCare AI • Do not reply
-        </p>
-      </div>
-    </body>
-    </html>
-    """
+<!DOCTYPE html>
+<html>
+<body style="background:#020617;color:#ffffff;
+             font-family:Inter,Arial,sans-serif;padding:40px">
+  <div style="max-width:600px;margin:auto;
+      background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.04));
+      border-radius:22px;padding:36px;
+      box-shadow:0 30px 80px rgba(0,0,0,.8)">
 
-    msg = MIMEMultipart("alternative")
-    msg["From"] = f"SoftCare AI <{MAIL_EMAIL}>"
-    msg["To"] = to_email
-    msg["Subject"] = subject
-    msg.attach(MIMEText(html, "html"))
+    <h1 style="color:#c7b8ff;margin-top:0">SoftCare AI</h1>
+
+    <h2 style="font-weight:600">
+      Welcome, {user_name}
+    </h2>
+
+    <p>
+      Your account was created using <b>{signup_method}</b>.
+    </p>
+
+    <p>
+      SoftCare AI is here to support you with calm, human-like conversations.
+    </p>
+
+    <a href="https://softcare-ai.onrender.com/dashboard"
+       style="display:inline-block;margin-top:24px;
+       padding:14px 32px;border-radius:999px;
+       background:linear-gradient(135deg,#7c4dff,#5b21ff);
+       color:#ffffff;text-decoration:none;
+       font-weight:600">
+       Start Chatting
+    </a>
+
+    <p style="margin-top:32px;font-size:12px;color:#9ca3af">
+      © 2026 SoftCare AI • Please do not reply to this email
+    </p>
+
+  </div>
+</body>
+</html>
+"""
+
+    message = Mail(
+        from_email=f"SoftCare AI <{os.getenv('MAIL_FROM')}>",
+        to_emails=to_email,
+        subject="Welcome to SoftCare AI ✨",
+        html_content=html
+    )
 
     try:
-        with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT) as server:
-            server.login(MAIL_EMAIL, MAIL_PASSWORD)
-            server.sendmail(MAIL_EMAIL, to_email, msg.as_string())
-        print("✅ Welcome email sent to", to_email)
+        sg = SendGridAPIClient(os.getenv("SENDGRID_API_KEY"))
+        sg.send(message)
+        print("✅ Welcome email sent (SendGrid)")
     except Exception as e:
-        print("❌ Email error:", e)
+        print("❌ SendGrid welcome email error:", e)
+        if hasattr(e, 'body'):
+            print(f"Details: {e.body}")
+            if b"verified Sender Identity" in e.body:
+                print(f"\n👉 ACTION REQUIRED: Verify '{os.getenv('MAIL_FROM')}' at:")
+                print("   https://app.sendgrid.com/settings/sender_auth\n")
 
 def send_reset_email(to_email, token):
-    reset_link = f"http://127.0.0.1:5000/reset-password?token={token}"
-    subject = "🔒 Reset your SoftCare AI Password"
-    
+    if not os.getenv("SENDGRID_API_KEY"):
+        print("⚠️ SENDGRID_API_KEY not found. Skipping reset email.")
+        return False
+
+    mail_from = os.getenv("MAIL_FROM")
+    if not mail_from:
+        print("⚠️ MAIL_FROM not found. Skipping reset email.")
+        return False
+
+    reset_link = f"https://softcare-ai.onrender.com/reset-password?token={token}"
+
     html = f"""
-    <html>
-    <body style="background:#020617;color:#fff;font-family:Inter,Arial;padding:40px">
-      <div style="max-width:500px;margin:auto;
-        background:#0f172a;border-radius:20px;padding:30px;
-        border:1px solid #334155">
-        <h2 style="color:#7c4dff;margin-top:0">Password Reset</h2>
-        <p>You requested to reset your password. Click below to proceed:</p>
-        <a href="{reset_link}"
-           style="display:inline-block;margin:20px 0;padding:12px 24px;
-           background:#7c4dff;color:#fff;text-decoration:none;border-radius:8px">
-           Reset Password
-        </a>
-        <p style="color:#94a3b8;font-size:12px">Link expires in 15 minutes.</p>
-        <p style="color:#94a3b8;font-size:12px">If you didn't ask for this, ignore this email.</p>
-      </div>
-    </body>
-    </html>
-    """
-    
-    msg = MIMEMultipart("alternative")
-    msg["From"] = f"SoftCare AI <{MAIL_EMAIL}>"
-    msg["To"] = to_email
-    msg["Subject"] = subject
-    msg.attach(MIMEText(html, "html"))
+<!DOCTYPE html>
+<html>
+<body style="background:#020617;color:#ffffff;
+             font-family:Inter,Arial,sans-serif;padding:40px">
+  <div style="max-width:520px;margin:auto;
+      background:#0f172a;border-radius:20px;
+      padding:32px;border:1px solid #334155">
+
+    <h2 style="color:#7c4dff;margin-top:0">
+      Password Reset
+    </h2>
+
+    <p>
+      You requested to reset your SoftCare AI password.
+    </p>
+
+    <a href="{reset_link}"
+       style="display:inline-block;margin:20px 0;
+       padding:12px 26px;
+       background:#7c4dff;color:#ffffff;
+       text-decoration:none;border-radius:8px;
+       font-weight:600">
+       Reset Password
+    </a>
+
+    <p style="font-size:12px;color:#94a3b8">
+      This link will expire in 15 minutes.
+    </p>
+
+    <p style="font-size:12px;color:#94a3b8">
+      If you didn’t request this, you can safely ignore this email.
+    </p>
+
+  </div>
+</body>
+</html>
+"""
+
+    message = Mail(
+        from_email=f"SoftCare AI <{os.getenv('MAIL_FROM')}>",
+        to_emails=to_email,
+        subject="Reset your SoftCare AI password 🔒",
+        html_content=html
+    )
 
     try:
-        with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT) as server:
-            server.login(MAIL_EMAIL, MAIL_PASSWORD)
-            server.sendmail(MAIL_EMAIL, to_email, msg.as_string())
-        print("✅ Reset email sent to", to_email)
+        sg = SendGridAPIClient(os.getenv("SENDGRID_API_KEY"))
+        sg.send(message)
+        print("✅ Reset email sent (SendGrid)")
         return True
     except Exception as e:
-        print("❌ Reset email error:", e)
+        print("❌ SendGrid reset email error:", e)
+        if hasattr(e, 'body'):
+            print(f"Details: {e.body}")
+            if b"verified Sender Identity" in e.body:
+                print(f"\n👉 ACTION REQUIRED: Verify '{os.getenv('MAIL_FROM')}' at:")
+                print("   https://app.sendgrid.com/settings/sender_auth\n")
         return False
 
 # ================= ROUTES =================
@@ -470,6 +536,7 @@ def login():
     if not check_password_hash(user.password, data["password"]):
         return jsonify({"error": "Invalid password"}), 401
 
+    session.permanent = True
     session["user"] = {
         "name": user.name,
         "email": user.email,
@@ -600,6 +667,7 @@ def google_callback():
         send_welcome_email(email, name, "google")
 
     # ✅ Login session
+    session.permanent = True
     session["user"] = {
         "name": user.name,
         "email": user.email,
